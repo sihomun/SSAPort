@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../lib/apiClient';
+import { supabase } from '../lib/supabaseClient';
 import { CheckCircle2, ChevronRight, MessageCircle, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const [stages, setStages] = useState([]);
   const [overallProgress, setOverallProgress] = useState(0);
   const [loading, setLoading] = useState(true);
-
-  const userId = "test-user-id";
+  const navigate = useNavigate();
 
   const stageNames = [
     "STAGE 0: 사전 준비",
@@ -26,26 +26,30 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // 1. Fetch user profile
-        const user = await apiClient.get(`/users/me?user_id=${userId}`);
+        
+        // 1. Get real user ID from Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+
+        // 2. Fetch user profile from backend
+        const userProfile = await apiClient.get(`/users/me?user_id=${user.id}`);
         setUserData({
-          ...user,
-          d_day: calculateDDay(user.departure_date)
+          ...userProfile,
+          d_day: calculateDDay(userProfile.departure_date || new Date())
         });
 
-        // 2. Fetch all checklist items and group by Stage
-        const response = await apiClient.get('/checklist/', { user_id: userId });
+        // 3. Fetch checklist and group by Stage
+        const response = await apiClient.get('/checklist/', { user_id: user.id });
         
-        // Regroup items by stage from the flat list
         const allItems = response.categories.flatMap(c => c.items.map(i => ({...i, categoryId: c.id})));
         
-        // We'll fetch the items again with stage info if possible, 
-        // but for now let's simulate the stage grouping logic
         const groupedStages = stageNames.map((name, index) => {
-          // This part assumes items have a 'stage' property from the DB
-          // For current items, we'll map them based on their content or category
+          // backend에서 넘겨준 stage 정보가 있을 경우 사용, 없을 경우 임시 매핑
           const stageItems = allItems.filter(item => {
-              // Temporary mapping logic until data is fully migrated
+              if (item.stage !== undefined && item.stage !== null) return item.stage === index;
               if (index === 0) return item.title.includes('어학') || item.title.includes('공고');
               if (index === 3) return item.categoryId === 'flights';
               if (index === 4) return item.categoryId === 'visa';
@@ -74,35 +78,33 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, []);
+  }, [navigate]);
 
   const calculateDDay = (dateString) => {
+    if (!dateString) return 0;
     const diff = new Date(dateString) - new Date();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
-  if (loading) return <div className="p-10 text-center">준비 현황 로딩 중...</div>;
+  if (loading) return <div className="p-10 text-center text-blue-600 font-bold">준비 현황 로딩 중...</div>;
 
-  // Find the current active stage (first stage with progress < 100)
   const currentStage = stages.find(s => s.progress < 100 && s.itemsCount > 0) || stages[stages.length - 1];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
       <div className="bg-white px-6 py-8 border-b border-gray-200">
         <div className="max-w-4xl mx-auto flex justify-between items-end">
           <div>
-            <h2 className="text-gray-500 text-sm font-medium mb-1">{userData?.host_university} 파견 준비</h2>
+            <h2 className="text-gray-500 text-sm font-medium mb-1">{userData?.host_university || '파견교 미설정'} 파견 준비</h2>
             <h1 className="text-2xl font-bold text-gray-900">{currentStage?.name.split(': ')[1]} 단계 진행 중</h1>
           </div>
           <div className="text-right">
-            <span className="text-3xl font-black text-blue-600">D-{userData?.d_day}</span>
+            <span className="text-3xl font-black text-blue-600">D-{userData?.d_day || 0}</span>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 mt-8">
-        {/* Progress Bar */}
         <div className="bg-white p-6 rounded-3xl shadow-sm mb-8">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-gray-900">전체 준비 완료도</h3>
@@ -116,15 +118,15 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stages Timeline */}
         <h3 className="font-bold text-gray-900 mb-4 ml-1">단계별 준비 현황</h3>
         <div className="space-y-4 mb-8">
           {stages.map((stage) => (
-            <div 
+            <Link 
               key={stage.id}
+              to={stage.itemsCount > 0 ? `/checklist/${stage.id}` : '#'}
               className={`bg-white p-5 rounded-2xl shadow-sm flex items-center justify-between border-2 transition ${
                 stage.id === currentStage?.id ? 'border-blue-500' : 'border-transparent'
-              }`}
+              } ${stage.itemsCount === 0 ? 'opacity-50 cursor-default' : 'hover:border-blue-200'}`}
             >
               <div className="flex items-center space-x-4">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -148,11 +150,10 @@ const Dashboard = () => {
                 </div>
                 <ChevronRight className="text-gray-300" />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
-        {/* AI Call to Action */}
         <Link to="/chat" className="bg-blue-900 p-6 rounded-3xl text-white flex justify-between items-center shadow-xl">
           <div>
             <p className="text-blue-300 text-sm mb-1">AI 가이드</p>
