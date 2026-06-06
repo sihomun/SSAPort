@@ -1,28 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, User, Bot, ChevronLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { apiClient } from '../lib/apiClient';
 
 const Chat = () => {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: '안녕하세요! SSAPort AI 어시스턴트입니다. 무엇이 궁금하신가요?' }
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // In a real app, this would come from auth context
+  const userId = "test-user-id";
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
-    // In a real app, call backend API: POST /chat
-    // Mocking response for now
-    setTimeout(() => {
+    try {
+      const response = await apiClient.post('/chat/', {
+        user_id: userId,
+        message: input,
+        history: messages.slice(-5) // Send last 5 messages for context
+      });
+
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: '질문하신 내용에 대해 답변해 드립니다. 미국 비자(F-1) 인터뷰를 위해서는 DS-160 확인서, I-20 원본, 그리고 비자 예약 확인서가 필요합니다.' 
+        content: response.reply 
       }]);
-    }, 1000);
+    } catch (error) {
+      console.error("Chat Error:", error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "죄송합니다. 서버와 통신 중 오류가 발생했습니다." 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,10 +68,21 @@ const Chat = () => {
                   {msg.role}
                 </span>
               </div>
-              <p className="text-sm leading-relaxed">{msg.content}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
             </div>
           </div>
         ))}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm">
+              <span className="flex space-x-1">
+                <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></span>
+                <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input */}
@@ -65,11 +94,13 @@ const Chat = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="비자 준비물에 대해 물어보세요..."
+            disabled={isLoading}
             className="flex-1 bg-gray-100 border-none rounded-full px-5 py-3 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
           />
           <button 
             onClick={handleSend}
-            className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition active:scale-95"
+            disabled={isLoading}
+            className={`${isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white p-3 rounded-full transition active:scale-95`}
           >
             <Send size={20} />
           </button>
