@@ -14,14 +14,27 @@ class PackingRequest(BaseModel):
 @router.post("/packing-list")
 async def get_packing_list(data: PackingRequest):
     system_prompt = """다음 조건에 맞는 해외 연수 짐 목록을 JSON으로 생성하세요.
-[출력 형식] 카테고리: 의류, 전자기기, 서류, 의약품, 생활용품. JSON만 출력하세요."""
+
+[조건]
+- 목적지: {destination}
+- 체류 기간: {stay_weeks}주
+- 계절: {season}
+- 세탁기 사용 가능 여부: {has_laundry}
+
+[출력 형식]
+카테고리: 의류, 전자기기, 서류, 의약품, 생활용품
+각 카테고리는 항목 배열로 구성
+
+JSON만 출력하고 설명 텍스트는 포함하지 마세요."""
     
     user_input = f"목적지: {data.destination}, 기간: {data.stay_weeks}주, 계절: {data.season}, 세탁기: {data.has_laundry}"
     
     reply = get_ai_response(system_prompt, user_input)
     try:
+        # Try to parse JSON from AI reply
         packing_list = json.loads(reply)
     except:
+        # Fallback if AI doesn't return clean JSON
         packing_list = {"error": "Failed to generate structured list", "raw": reply}
         
     return {"packing_list": packing_list}
