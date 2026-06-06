@@ -25,10 +25,20 @@ const uniqueItems = (items) => {
   });
 };
 
+const getItemStage = (item, fallbackCategory) => {
+  if (item.stage !== undefined && item.stage !== null) return Number(item.stage);
+  if (item.categoryId === 'flights') return 3;
+  if (item.categoryId === 'visa') return 4;
+  if (item.categoryId === 'accommodation') return 5;
+  if (item.categoryId === 'packing') return 6;
+  return Number(fallbackCategory);
+};
+
 const ChecklistDetail = () => {
   const { category } = useParams();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
+  const [availableStages, setAvailableStages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
 
@@ -38,20 +48,18 @@ const ChecklistDetail = () => {
         setLoading(true);
         const response = await apiClient.get('/checklist/', { user_id: uid });
         const categories = response.categories || [];
-        const allItems = categories.flatMap((itemCategory) =>
-          itemCategory.items.map((item) => ({ ...item, categoryId: itemCategory.id })),
+        const allItems = uniqueItems(
+          categories.flatMap((itemCategory) =>
+            itemCategory.items.map((item) => ({
+              ...item,
+              categoryId: itemCategory.id,
+              resolvedStage: getItemStage({ ...item, categoryId: itemCategory.id }, category),
+            })),
+          ),
         );
 
-        const filtered = allItems.filter((item) => {
-          if (item.stage !== undefined && item.stage !== null) return String(item.stage) === category;
-          if (category === '3') return item.categoryId === 'flights';
-          if (category === '4') return item.categoryId === 'visa';
-          if (category === '5') return item.categoryId === 'accommodation';
-          if (category === '6') return item.categoryId === 'packing';
-          return false;
-        });
-
-        setItems(uniqueItems(filtered));
+        setAvailableStages([...new Set(allItems.map((item) => item.resolvedStage))].sort((a, b) => a - b));
+        setItems(allItems.filter((item) => String(item.resolvedStage) === category));
       } catch (error) {
         console.error('Fetch items error:', error);
       } finally {
@@ -76,14 +84,32 @@ const ChecklistDetail = () => {
     init();
   }, [category, navigate]);
 
+  const goToNextStage = () => {
+    const currentStage = Number(category);
+    const nextStage = availableStages.find((stage) => stage > currentStage);
+
+    window.setTimeout(() => {
+      if (nextStage !== undefined) {
+        navigate(`/checklist/${nextStage}`);
+      } else {
+        navigate('/dashboard');
+      }
+    }, 350);
+  };
+
   const toggleItem = async (itemId, currentStatus) => {
     if (!userId) return;
 
     try {
-      await apiClient.patch(`/checklist/items/${itemId}`, { is_done: !currentStatus }, { user_id: userId });
-      setItems((currentItems) =>
-        currentItems.map((item) => (item.id === itemId ? { ...item, is_done: !currentStatus } : item)),
-      );
+      const nextStatus = !currentStatus;
+      await apiClient.patch(`/checklist/items/${itemId}`, { is_done: nextStatus }, { user_id: userId });
+
+      const updatedItems = items.map((item) => (item.id === itemId ? { ...item, is_done: nextStatus } : item));
+      setItems(updatedItems);
+
+      if (nextStatus && updatedItems.length > 0 && updatedItems.every((item) => item.is_done)) {
+        goToNextStage();
+      }
     } catch (error) {
       console.error('Toggle error:', error);
     }

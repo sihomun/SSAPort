@@ -66,7 +66,7 @@ const Dashboard = () => {
 
         const groupedStages = stageNames.map((name, index) => {
           const stageItems = allItems.filter((item) => {
-            if (item.stage !== undefined && item.stage !== null) return item.stage === index;
+            if (item.stage !== undefined && item.stage !== null) return Number(item.stage) === index;
             if (index === 3) return item.categoryId === 'flights';
             if (index === 4) return item.categoryId === 'visa';
             if (index === 5) return item.categoryId === 'accommodation';
