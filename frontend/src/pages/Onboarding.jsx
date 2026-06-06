@@ -1,16 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../lib/apiClient';
+import { supabase } from '../lib/supabaseClient';
 
 const Onboarding = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
   const [formData, setFormData] = useState({
     host_university: '',
     departure_date: '',
     stay_weeks: 4,
     is_first_time: true
   });
+
+  useEffect(() => {
+    // 현재 로그인된 유저 ID 가져오기
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+      else navigate('/login');
+    });
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -22,29 +32,31 @@ const Onboarding = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!userId) return;
+    
     setLoading(true);
     try {
-      // For MVP, we use a fixed user_id or generate one
-      const userId = "test-user-id"; 
       await apiClient.post('/users/onboarding', {
         ...formData,
         user_id: userId,
-        email: "student@kentech.ac.kr"
+        email: (await supabase.auth.getUser()).data.user?.email
       });
       navigate('/dashboard');
     } catch (error) {
       console.error("Onboarding failed:", error);
-      alert("온보딩 중 오류가 발생했습니다. 다시 시도해주세요.");
+      alert("AI 체크리스트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
   };
 
+  if (!userId) return null;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">출국 준비 시작하기</h1>
-        <p className="text-gray-500 mb-8">몇 가지 정보만 입력하면 AI가 맞춤형 체크리스트를 만들어 드립니다.</p>
+        <p className="text-gray-500 mb-8 text-sm">몇 가지 정보만 입력하면 AI가 맞춤형 체크리스트를 만들어 드립니다. (약 5-10초 소요)</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -101,10 +113,10 @@ const Onboarding = () => {
             type="submit"
             disabled={loading}
             className={`w-full py-4 rounded-xl font-bold text-white transition shadow-lg ${
-              loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
             }`}
           >
-            {loading ? 'AI 체크리스트 생성 중...' : '준비 시작하기'}
+            {loading ? 'AI가 체크리스트를 생성 중...' : '준비 시작하기'}
           </button>
         </form>
       </div>
