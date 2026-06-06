@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from lib.default_checklist import ensure_default_stage_items
+from lib.default_checklist import ensure_default_stage_items, get_source_detail
 from lib.supabase import supabase
 
 router = APIRouter()
@@ -103,6 +103,7 @@ async def get_checklist(user_id: str = Query(...)):
                 "is_done": bool(record.get("is_done")),
                 "deadline_label": item_info.get("deadline_label"),
                 "description": item_info.get("description"),
+                "source_detail": get_source_detail(item_info),
                 "links": item_info.get("links", []),
                 "stage": item_info.get("stage"),
             }

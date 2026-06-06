@@ -206,6 +206,13 @@ const ChecklistDetail = () => {
                     {item.description}
                   </p>
 
+                  {!item.is_done && item.source_detail && (
+                    <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-relaxed text-blue-950">
+                      <p className="mb-1 font-bold text-blue-700">SSAP 신청 체크리스트 참고</p>
+                      <p>{item.source_detail}</p>
+                    </div>
+                  )}
+
                   {item.links && item.links.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {item.links.map((link, index) => (
