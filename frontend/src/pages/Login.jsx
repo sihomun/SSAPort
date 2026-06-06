@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -9,59 +9,61 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
+  const handleAuth = async (event) => {
+    event.preventDefault();
     setLoading(true);
-    
-    if (isSignUp) {
-      // Sign Up
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin + '/onboarding'
-        }
-      });
-      if (error) {
-        alert(error.message);
-      } else {
-        alert('회원가입 신청이 완료되었습니다! 이메일을 확인하여 인증해주세요.');
+
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/onboarding`,
+          },
+        });
+
+        if (error) throw error;
+        alert('회원가입 요청이 완료되었습니다. 이메일 인증을 확인해 주세요.');
+        return;
       }
-    } else {
-      // Login
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      if (error) {
-        alert(error.message);
-      } else {
-        navigate('/dashboard');
-      }
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      navigate('/dashboard');
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-black text-blue-600 mb-2">SSAPort</h1>
-          <p className="text-gray-500 text-sm">
-            {isSignUp ? '새로운 계정 만들기' : '다시 오신 것을 환영합니다'}
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 text-3xl font-black text-blue-600">SSAPort</h1>
+          <p className="text-sm text-gray-500">
+            {isSignUp ? '새 계정을 만들고 SSAP 준비를 시작하세요.' : '다시 오신 것을 환영합니다.'}
           </p>
         </div>
 
-        <div className="flex bg-gray-100 p-1 rounded-xl mb-8">
-          <button 
+        <div className="mb-8 flex rounded-xl bg-gray-100 p-1">
+          <button
+            type="button"
             onClick={() => setIsSignUp(false)}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition ${!isSignUp ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+            className={`flex-1 rounded-lg py-2 text-sm font-bold transition ${
+              !isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'
+            }`}
           >
             로그인
           </button>
-          <button 
+          <button
+            type="button"
             onClick={() => setIsSignUp(true)}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition ${isSignUp ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+            className={`flex-1 rounded-lg py-2 text-sm font-bold transition ${
+              isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'
+            }`}
           >
             회원가입
           </button>
@@ -69,37 +71,43 @@ const Login = () => {
 
         <form onSubmit={handleAuth} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">이메일 주소</label>
+            <label className="mb-1 ml-1 block text-xs font-bold uppercase text-gray-400">
+              이메일 주소
+            </label>
             <input
               type="email"
               placeholder="student@kentech.ac.kr"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
           </div>
+
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">비밀번호</label>
+            <label className="mb-1 ml-1 block text-xs font-bold uppercase text-gray-400">
+              비밀번호
+            </label>
             <input
               type="password"
-              placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="비밀번호"
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               required
             />
           </div>
-          <button 
+
+          <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg disabled:bg-gray-400 mt-4"
+            className="mt-4 w-full rounded-xl bg-blue-600 py-4 font-bold text-white shadow-lg transition hover:bg-blue-700 disabled:bg-gray-400"
           >
-            {loading ? '처리 중...' : (isSignUp ? '회원가입하기' : '로그인하기')}
+            {loading ? '처리 중...' : isSignUp ? '회원가입하기' : '로그인하기'}
           </button>
         </form>
-        
-        <p className="mt-8 text-center text-[10px] text-gray-400 leading-relaxed uppercase tracking-widest">
+
+        <p className="mt-8 text-center text-[10px] uppercase tracking-widest text-gray-400">
           Secure Authentication by Supabase
         </p>
       </div>

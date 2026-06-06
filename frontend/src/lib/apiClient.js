@@ -27,50 +27,37 @@ export const apiClient = {
     const url = new URL(`${API_BASE_URL}${formattedEndpoint}`);
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
     
-    try {
-      const headers = await getHeaders();
-      const response = await fetch(url.toString(), { headers });
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-      return response.json();
-    } catch (e) {
-      console.error(`Fetch GET failed for ${url.toString()}:`, e);
-      throw e;
-    }
+    const headers = await getHeaders();
+    const response = await fetch(url.toString(), { headers });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return response.json();
   },
 
   async post(endpoint, body) {
     const formattedEndpoint = formatEndpoint(endpoint);
     const url = `${API_BASE_URL}${formattedEndpoint}`;
-    try {
-      const headers = await getHeaders();
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-      return response.json();
-    } catch (e) {
-      console.error(`Fetch POST failed for ${url}:`, e);
-      throw e;
-    }
+    const headers = await getHeaders();
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return response.json();
   },
 
-  async patch(endpoint, body) {
+  async patch(endpoint, body, params = {}) {
     const formattedEndpoint = formatEndpoint(endpoint);
-    const url = `${API_BASE_URL}${formattedEndpoint}`;
-    try {
-      const headers = await getHeaders();
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-      return response.json();
-    } catch (e) {
-      console.error(`Fetch PATCH failed for ${url}:`, e);
-      throw e;
-    }
+    const url = new URL(`${API_BASE_URL}${formattedEndpoint}`);
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+    
+    const headers = await getHeaders();
+    const response = await fetch(url.toString(), {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return response.json();
   }
 };
