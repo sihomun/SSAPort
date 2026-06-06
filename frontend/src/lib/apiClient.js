@@ -15,7 +15,6 @@ const getHeaders = async () => {
 
 const formatEndpoint = (endpoint) => {
   let path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  // FastAPI 라우터 설정에 따라 끝에 슬래시를 제거 (onboarding, chat 등)
   if (path.length > 1 && path.endsWith('/')) {
     path = path.slice(0, -1);
   }
@@ -28,33 +27,50 @@ export const apiClient = {
     const url = new URL(`${API_BASE_URL}${formattedEndpoint}`);
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
     
-    const headers = await getHeaders();
-    const response = await fetch(url.toString(), { headers });
-    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-    return response.json();
+    try {
+      const headers = await getHeaders();
+      const response = await fetch(url.toString(), { headers });
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      return response.json();
+    } catch (e) {
+      console.error(`Fetch GET failed for ${url.toString()}:`, e);
+      throw e;
+    }
   },
 
   async post(endpoint, body) {
     const formattedEndpoint = formatEndpoint(endpoint);
-    const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${formattedEndpoint}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-    return response.json();
+    const url = `${API_BASE_URL}${formattedEndpoint}`;
+    try {
+      const headers = await getHeaders();
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      return response.json();
+    } catch (e) {
+      console.error(`Fetch POST failed for ${url}:`, e);
+      throw e;
+    }
   },
 
   async patch(endpoint, body) {
     const formattedEndpoint = formatEndpoint(endpoint);
-    const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${formattedEndpoint}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-    return response.json();
+    const url = `${API_BASE_URL}${formattedEndpoint}`;
+    try {
+      const headers = await getHeaders();
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      return response.json();
+    } catch (e) {
+      console.error(`Fetch PATCH failed for ${url}:`, e);
+      throw e;
+    }
   }
 };
