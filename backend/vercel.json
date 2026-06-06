@@ -6,14 +6,10 @@
       "use": "@vercel/python"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(favicon.ico|favicon.png|robots.txt)",
-      "destination": "/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "main.py"
+      "src": "/(.*)",
+      "dest": "main.py"
     }
   ]
 }

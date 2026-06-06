@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 const getHeaders = async () => {
   const { data: { session } } = await supabase.auth.getSession();
@@ -13,36 +13,48 @@ const getHeaders = async () => {
   return headers;
 };
 
+const formatEndpoint = (endpoint) => {
+  let path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  // FastAPI 라우터 설정에 따라 끝에 슬래시를 제거 (onboarding, chat 등)
+  if (path.length > 1 && path.endsWith('/')) {
+    path = path.slice(0, -1);
+  }
+  return path;
+};
+
 export const apiClient = {
   async get(endpoint, params = {}) {
-    const url = new URL(`${API_BASE_URL}${endpoint}`);
+    const formattedEndpoint = formatEndpoint(endpoint);
+    const url = new URL(`${API_BASE_URL}${formattedEndpoint}`);
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
     
     const headers = await getHeaders();
-    const response = await fetch(url, { headers });
-    if (!response.ok) throw new Error('API request failed');
+    const response = await fetch(url.toString(), { headers });
+    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
     return response.json();
   },
 
   async post(endpoint, body) {
+    const formattedEndpoint = formatEndpoint(endpoint);
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${formattedEndpoint}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error('API request failed');
+    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
     return response.json();
   },
 
   async patch(endpoint, body) {
+    const formattedEndpoint = formatEndpoint(endpoint);
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${formattedEndpoint}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error('API request failed');
+    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
     return response.json();
   }
 };
