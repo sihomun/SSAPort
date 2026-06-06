@@ -20,9 +20,10 @@ class OnboardingRequest(BaseModel):
 @router.post("/onboarding")
 async def onboarding(data: OnboardingRequest):
     try:
-        if not supabase:
-            return JSONResponse(status_code=500, content={"error": "Supabase not connected"})
+        if supabase is None:
+            return JSONResponse(status_code=500, content={"error": "Supabase client not initialized. Check Env Vars."})
 
+        # Save user info
         supabase.table("users").upsert({
             "id": data.user_id,
             "email": data.email,
@@ -35,7 +36,7 @@ async def onboarding(data: OnboardingRequest):
         # Fast AI Generation
         checklist_data = {"items": []}
         try:
-            system_prompt = "KENTECH SSAP. STAGE 3,4,5 필수 3개 JSON. {\"items\": [{\"stage\": 3, \"category\": \"visa\", \"title\": \"...\"}]}"
+            system_prompt = "KENTECH SSAP 필수 체크리스트 3개 JSON. {\"items\": [{\"stage\": 3, \"category\": \"visa\", \"title\": \"...\"}]}"
             ai_reply = get_ai_response(system_prompt, f"학교: {data.host_university}")
             json_match = re.search(r'\{.*\}', ai_reply, re.DOTALL)
             if json_match:
@@ -43,7 +44,7 @@ async def onboarding(data: OnboardingRequest):
         except: pass
 
         if not checklist_data.get("items"):
-            checklist_data = {"items": [{"stage": 3, "category": "visa", "title": "기본 준비 시작", "deadline_label": "D-90", "description": "파견 학교 가이드 확인"}]}
+            checklist_data = {"items": [{"stage": 3, "category": "visa", "title": "준비 시작", "deadline_label": "D-90", "description": "가이드 확인"}]}
 
         for item in checklist_data["items"]:
             try:
@@ -61,20 +62,19 @@ async def onboarding(data: OnboardingRequest):
             
         return {"success": True}
     except Exception as e:
+        print(f"ONBOARDING ERROR: {str(e)}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @router.get("/me")
 async def get_me(user_id: str):
     try:
-        if not supabase:
-            return JSONResponse(status_code=500, content={"error": "Supabase not connected"})
+        if supabase is None:
+            return JSONResponse(status_code=500, content={"error": "Supabase client not initialized"})
         
-        # user_id가 query param으로 들어올 때의 처리
         response = supabase.table("users").select("*").eq("id", user_id).execute()
-        if response.data and len(response.data) > 0:
+        if response.data:
             return response.data[0]
-        
-        # 만약 해당 유저가 없으면 빈 객체나 에러 대신 기본값이라도 반환 (CORS 방지)
-        return JSONResponse(status_code=404, content={"error": "User not found", "user_id": user_id})
+        return JSONResponse(status_code=404, content={"error": "User not found"})
     except Exception as e:
+        print(f"GET_ME ERROR: {str(e)}")
         return JSONResponse(status_code=500, content={"error": str(e)})
