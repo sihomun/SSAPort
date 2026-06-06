@@ -3,6 +3,7 @@ from typing import Any, Dict, Tuple
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+from lib.default_checklist import ensure_default_stage_items
 from lib.supabase import supabase
 
 router = APIRouter()
@@ -37,12 +38,43 @@ async def get_checklist(user_id: str = Query(...)):
         if not supabase:
             return {"overall_progress": 0, "categories": []}
 
+        user_response = supabase.table("users").select("host_university").eq("id", user_id).execute()
+        host_university = user_response.data[0].get("host_university") if user_response.data else None
+
         response = (
             supabase.table("user_checklist")
             .select("*, checklist_items(*)")
             .eq("user_id", user_id)
             .execute()
         )
+
+        if not response.data:
+            ensure_default_stage_items(supabase, user_id, host_university)
+            response = (
+                supabase.table("user_checklist")
+                .select("*, checklist_items(*)")
+                .eq("user_id", user_id)
+                .execute()
+            )
+        else:
+            existing_item_infos = [
+                record.get("checklist_items")
+                for record in response.data
+                if record.get("checklist_items")
+            ]
+            inserted_count = ensure_default_stage_items(
+                supabase,
+                user_id,
+                host_university,
+                existing_item_infos=existing_item_infos,
+            )
+            if inserted_count:
+                response = (
+                    supabase.table("user_checklist")
+                    .select("*, checklist_items(*)")
+                    .eq("user_id", user_id)
+                    .execute()
+                )
 
         if not response.data:
             return {"overall_progress": 0, "categories": []}

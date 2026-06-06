@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from lib.ai import get_ai_response
+from lib.default_checklist import merge_default_stage_items
 from lib.supabase import supabase
 
 router = APIRouter()
@@ -99,7 +100,7 @@ Rules:
         except Exception as ai_error:
             print(f"AI generation error: {str(ai_error)}")
 
-        items = _dedupe_items(checklist_data.get("items", []))
+        items = _dedupe_items(merge_default_stage_items(checklist_data.get("items", [])))
         if items:
             # Replace the user's generated checklist instead of appending duplicates.
             supabase.table("user_checklist").delete().eq("user_id", data.user_id).execute()
