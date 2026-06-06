@@ -1,6 +1,6 @@
 import os
 import sys
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -11,17 +11,25 @@ from routers import users, checklist, chat, packing
 
 app = FastAPI(title="SSAPort API")
 
-# 모든 에러에 대해 CORS 헤더를 강제로 붙여주는 미들웨어
+# 강력한 CORS 미들웨어 적용
 @app.middleware("http")
-async def add_cors_header(request: Request, call_next):
+async def add_process_time_header(request: Request, call_next):
+    # OPTIONS 요청 처리 (Preflight)
     if request.method == "OPTIONS":
-        response = JSONResponse(content="OK")
+        response = Response()
     else:
-        response = await call_next(request)
-    
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            # 서버 내부 에러 시에도 JSON 응답과 함께 CORS 헤더 전송
+            response = JSONResponse(
+                status_code=500,
+                content={"error": str(e)}
+            )
+            
     response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
     return response
 
 # 라우터 등록
