@@ -19,7 +19,7 @@ class OnboardingRequest(BaseModel):
 @router.post("/onboarding")
 async def onboarding(data: OnboardingRequest):
     try:
-        # 1. Save user info (Upsert)
+        # 1. Save user info
         user_data = {
             "id": data.user_id,
             "email": data.email,
@@ -30,79 +30,56 @@ async def onboarding(data: OnboardingRequest):
         }
         supabase.table("users").upsert(user_data).execute()
         
-        # 2. AI Checklist Generation with SSAP Specific Data
+        # 2. AI Checklist Generation with STAGE info
         checklist_data = None
         try:
-            # SSAP Master Data Context (Condensed for prompt)
-            ssap_context = """
-[KENTECH SSAP Master Guide]
-- STAGE 3 (Registration): 
-  * UCLA: Use KENTECH link (wait!), MyUCLA (9-digit UID), BruinBill, I-20 Request.
-  * UC Berkeley: summer.berkeley.edu, CalCentral, CalNet ID, Flywire payment, I-20 (ISS Portal).
-  * Harvard: MyDCE, 8 credits min (in-person), Payment via Travel Card.
-  * UCL: Acceptance of Offer Form (ASAP), 수업료 결제 링크 확인.
-- STAGE 4 (Visa): 
-  * US (UCLA, Berkeley, Harvard): F-1 Visa. I-901 SEVIS Fee ($350) -> DS-160 -> USTravelDocs interview.
-  * UK (UCL): ETA (Electronic Travel Authorization) required from 2025.
-- STAGE 5 (Housing): 
-  * UCLA: Housing Portal (Deluxe/Suite), Meal plan mandatory.
-  * Berkeley: Summer Sessions Housing Offer, $300 deposit.
-- STAGE 7 (Post-program): Report with 3+ photos, include all receipts.
-"""
-
             system_prompt = f"""당신은 KENTECH SSAP 전담 어시스턴트입니다. 
-제공된 [KENTECH SSAP Master Guide]를 바탕으로, 유저의 목적지({data.host_university})에 최적화된 출국 전 체크리스트를 JSON으로 생성하세요.
+제공된 STAGE 0~7 흐름을 바탕으로 {data.host_university} 파견 학생을 위한 체크리스트를 생성하세요.
 
-반드시 아래 JSON 구조를 엄격히 지키세요:
+[출력 형식]
+반드시 아래 JSON 구조를 지키세요. 각 항목에는 stage(0~7) 번호를 부여하세요.
 {{
-  "categories": [
+  "items": [
     {{
-      "id": "visa",
-      "items": [
-        {{
-          "title": "항목명", 
-          "deadline_label": "D-90", 
-          "description": "구체적 설명 (학교별 전용 포털 이름 포함)",
-          "links": [{{"label": "사이트명", "url": "URL"}}]
-        }}
-      ]
+      "stage": 3,
+      "category": "visa",
+      "title": "UCLA I-20 신청",
+      "deadline_label": "D-90",
+      "description": "설명..."
     }}
   ]
 }}
-카테고리 ID: visa, flights, accommodation, insurance, esim, packing
 
-{ssap_context}
+[단계 정의]
+STAGE 0: 사전 준비 (어학 등)
+STAGE 1: SSAP 신청 (학업계획서 등)
+STAGE 2: 결과 발표/면접
+STAGE 3: 파견교 등록/수강신청 (가장 중요!)
+STAGE 4: 비자/입국허가
+STAGE 5: 숙소 신청
+STAGE 6: 출국 전 준비 (짐싸기/금융)
+STAGE 7: 귀국 후 결과보고서
 """
 
-            user_info = f"목적지 대학: {data.host_university}, 출발일: {data.departure_date}, 기간: {data.stay_weeks}주"
+            user_info = f"목적지: {data.host_university}, 출발일: {data.departure_date}, 기간: {data.stay_weeks}주"
             ai_reply = get_ai_response(system_prompt, user_info)
             
             json_match = re.search(r'\{.*\}', ai_reply, re.DOTALL)
             if json_match:
                 checklist_data = json.loads(json_match.group())
         except Exception as ai_err:
-            print(f"AI Generation Failed: {str(ai_err)}")
+            print(f"AI Error: {str(ai_err)}")
 
-        # 3. Fallback (If AI fails)
-        if not checklist_data or "categories" not in checklist_data:
-            checklist_data = {
-                "categories": [
-                    {"id": "visa", "items": [{"title": "SSAP 비자 준비 시작", "deadline_label": "D-90", "description": "파견 학교 가이드에 따라 I-20 발급 및 비자 서류 준비"}]},
-                    {"id": "flights", "items": [{"title": "항공권 예약", "deadline_label": "D-60", "description": "학교 일정에 맞춰 왕복 항공권 구매"}]}
-                ]
-            }
-
-        # 4. Save to DB
-        for category_data in checklist_data.get("categories", []):
-            category_id = category_data.get("id")
-            for item in category_data.get("items", []):
+        # 3. Save to DB with Stage
+        if checklist_data and "items" in checklist_data:
+            for item in checklist_data["items"]:
                 item_res = supabase.table("checklist_items").insert({
-                    "category": category_id,
+                    "stage": item.get("stage", 0),
+                    "category": item.get("category", "common"),
                     "university": data.host_university,
-                    "title": item.get("title", "준비 항목"),
-                    "description": item.get("description", ""),
-                    "deadline_label": item.get("deadline_label", "D-Day"),
-                    "links": item.get("links", [])
+                    "title": item.get("title"),
+                    "description": item.get("description"),
+                    "deadline_label": item.get("deadline_label"),
                 }).execute()
                 
                 if item_res.data:
@@ -114,12 +91,4 @@ async def onboarding(data: OnboardingRequest):
         
         return {"user_id": data.user_id, "checklist_generated": True}
     except Exception as e:
-        print(f"Onboarding Critical Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/me")
-async def get_me(user_id: str):
-    response = supabase.table("users").select("*").eq("id", user_id).execute()
-    if not response.data:
-        raise HTTPException(status_code=404, detail="User not found")
-    return response.data[0]
