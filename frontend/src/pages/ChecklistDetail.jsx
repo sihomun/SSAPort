@@ -15,6 +15,8 @@ const stageMap = {
   7: 'STAGE 7: 귀국 및 보고',
 };
 
+const stageIds = Object.keys(stageMap).map(Number);
+
 const uniqueItems = (items) => {
   const seen = new Set();
   return items.filter((item) => {
@@ -39,17 +41,16 @@ const ChecklistDetail = () => {
   const navigate = useNavigate();
   const currentStage = Number(category);
   const [items, setItems] = useState([]);
-  const [availableStages, setAvailableStages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
 
   const previousStage = useMemo(
-    () => [...availableStages].reverse().find((stage) => stage < currentStage),
-    [availableStages, currentStage],
+    () => [...stageIds].reverse().find((stage) => stage < currentStage),
+    [currentStage],
   );
   const nextStage = useMemo(
-    () => availableStages.find((stage) => stage > currentStage),
-    [availableStages, currentStage],
+    () => stageIds.find((stage) => stage > currentStage),
+    [currentStage],
   );
 
   useEffect(() => {
@@ -68,7 +69,6 @@ const ChecklistDetail = () => {
           ),
         );
 
-        setAvailableStages([...new Set(allItems.map((item) => item.resolvedStage))].sort((a, b) => a - b));
         setItems(allItems.filter((item) => item.resolvedStage === currentStage));
       } catch (error) {
         console.error('Fetch items error:', error);

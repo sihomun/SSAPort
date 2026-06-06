@@ -138,14 +138,13 @@ const Dashboard = () => {
         <h3 className="mb-4 ml-1 font-bold text-gray-900">단계별 준비 현황</h3>
         <div className="mb-8 space-y-4">
           {stages.map((stage) => {
-            const hasItems = stage.itemsCount > 0;
             return (
               <Link
                 key={stage.id}
-                to={hasItems ? `/checklist/${stage.id}` : '#'}
-                className={`flex items-center justify-between rounded-2xl border-2 bg-white p-5 shadow-sm transition ${
+                to={`/checklist/${stage.id}`}
+                className={`flex items-center justify-between rounded-2xl border-2 bg-white p-5 shadow-sm transition hover:border-blue-200 ${
                   stage.id === currentStage?.id ? 'border-blue-500' : 'border-transparent'
-                } ${hasItems ? 'hover:border-blue-200' : 'cursor-default opacity-50'}`}
+                }`}
               >
                 <div className="flex items-center space-x-4">
                   <div
