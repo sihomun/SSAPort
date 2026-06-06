@@ -13,7 +13,7 @@ const Landing = () => {
           출국 전 준비 관리 웹 서비스
         </p>
         <Link 
-          to="/login" 
+          to="/onboarding" 
           className="bg-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-blue-700 transition"
         >
           Start My SSAP
