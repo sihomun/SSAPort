@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, ChevronLeft, Circle, ExternalLink, Info } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { CheckCircle2, ChevronLeft, ChevronRight, Circle, ExternalLink, Info } from 'lucide-react';
 import { apiClient } from '../lib/apiClient';
 import { supabase } from '../lib/supabaseClient';
 
@@ -37,10 +37,20 @@ const getItemStage = (item, fallbackCategory) => {
 const ChecklistDetail = () => {
   const { category } = useParams();
   const navigate = useNavigate();
+  const currentStage = Number(category);
   const [items, setItems] = useState([]);
   const [availableStages, setAvailableStages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
+
+  const previousStage = useMemo(
+    () => [...availableStages].reverse().find((stage) => stage < currentStage),
+    [availableStages, currentStage],
+  );
+  const nextStage = useMemo(
+    () => availableStages.find((stage) => stage > currentStage),
+    [availableStages, currentStage],
+  );
 
   useEffect(() => {
     const fetchItems = async (uid) => {
@@ -59,7 +69,7 @@ const ChecklistDetail = () => {
         );
 
         setAvailableStages([...new Set(allItems.map((item) => item.resolvedStage))].sort((a, b) => a - b));
-        setItems(allItems.filter((item) => String(item.resolvedStage) === category));
+        setItems(allItems.filter((item) => item.resolvedStage === currentStage));
       } catch (error) {
         console.error('Fetch items error:', error);
       } finally {
@@ -82,12 +92,9 @@ const ChecklistDetail = () => {
     };
 
     init();
-  }, [category, navigate]);
+  }, [category, currentStage, navigate]);
 
   const goToNextStage = () => {
-    const currentStage = Number(category);
-    const nextStage = availableStages.find((stage) => stage > currentStage);
-
     window.setTimeout(() => {
       if (nextStage !== undefined) {
         navigate(`/checklist/${nextStage}`);
@@ -121,17 +128,43 @@ const ChecklistDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="sticky top-0 z-10 flex items-center border-b border-gray-200 bg-white px-4 py-6">
-        <button type="button" onClick={() => navigate('/dashboard')} className="mr-4 text-gray-500 hover:text-gray-900">
-          <ChevronLeft size={24} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{stageMap[category] || '준비 항목'}</h1>
-          <p className="mt-0.5 text-xs text-gray-400">필수 준비 사항을 체크하세요.</p>
+      <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-4 py-5">
+        <div className="mx-auto flex max-w-2xl items-center">
+          <button type="button" onClick={() => navigate('/dashboard')} className="mr-4 text-gray-500 hover:text-gray-900">
+            <ChevronLeft size={24} />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">{stageMap[category] || '준비 항목'}</h1>
+            <p className="mt-0.5 text-xs text-gray-400">지난 단계도 언제든 다시 열어 수정할 수 있습니다.</p>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto mt-4 max-w-2xl space-y-4 p-4">
+        <div className="flex items-center justify-between gap-3">
+          {previousStage !== undefined ? (
+            <Link
+              to={`/checklist/${previousStage}`}
+              className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-sm hover:border-blue-200"
+            >
+              <ChevronLeft size={16} className="mr-1" />
+              이전 단계
+            </Link>
+          ) : (
+            <span />
+          )}
+
+          {nextStage !== undefined && (
+            <Link
+              to={`/checklist/${nextStage}`}
+              className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-sm hover:border-blue-200"
+            >
+              다음 단계
+              <ChevronRight size={16} className="ml-1" />
+            </Link>
+          )}
+        </div>
+
         {items.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-gray-200 bg-white py-20 text-center">
             <Info className="mx-auto mb-4 text-gray-300" size={48} />

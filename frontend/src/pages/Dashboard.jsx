@@ -137,43 +137,46 @@ const Dashboard = () => {
 
         <h3 className="mb-4 ml-1 font-bold text-gray-900">단계별 준비 현황</h3>
         <div className="mb-8 space-y-4">
-          {stages.map((stage) => (
-            <Link
-              key={stage.id}
-              to={stage.itemsCount > 0 ? `/checklist/${stage.id}` : '#'}
-              className={`flex items-center justify-between rounded-2xl border-2 bg-white p-5 shadow-sm transition ${
-                stage.id === currentStage?.id ? 'border-blue-500' : 'border-transparent'
-              } ${stage.itemsCount === 0 ? 'cursor-default opacity-50' : 'hover:border-blue-200'}`}
-            >
-              <div className="flex items-center space-x-4">
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                    stage.progress === 100
-                      ? 'bg-green-100 text-green-600'
-                      : stage.id === currentStage?.id
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-400'
-                  }`}
-                >
-                  {stage.progress === 100 ? <CheckCircle2 size={24} /> : <Clock size={24} />}
+          {stages.map((stage) => {
+            const hasItems = stage.itemsCount > 0;
+            return (
+              <Link
+                key={stage.id}
+                to={hasItems ? `/checklist/${stage.id}` : '#'}
+                className={`flex items-center justify-between rounded-2xl border-2 bg-white p-5 shadow-sm transition ${
+                  stage.id === currentStage?.id ? 'border-blue-500' : 'border-transparent'
+                } ${hasItems ? 'hover:border-blue-200' : 'cursor-default opacity-50'}`}
+              >
+                <div className="flex items-center space-x-4">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                      stage.progress === 100
+                        ? 'bg-green-100 text-green-600'
+                        : stage.id === currentStage?.id
+                          ? 'bg-blue-100 text-blue-600'
+                          : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {stage.progress === 100 ? <CheckCircle2 size={24} /> : <Clock size={24} />}
+                  </div>
+                  <div>
+                    <h4 className={`font-bold ${stage.id === currentStage?.id ? 'text-gray-900' : 'text-gray-600'}`}>
+                      {stage.name}
+                    </h4>
+                    <p className="text-xs text-gray-400">
+                      {stage.doneCount} / {stage.itemsCount} 항목 완료
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className={`font-bold ${stage.id === currentStage?.id ? 'text-gray-900' : 'text-gray-500'}`}>
-                    {stage.name}
-                  </h4>
-                  <p className="text-xs text-gray-400">
-                    {stage.doneCount} / {stage.itemsCount} 항목 완료
-                  </p>
+                <div className="flex items-center space-x-4">
+                  <span className={`text-sm font-bold ${stage.progress === 100 ? 'text-green-500' : 'text-blue-600'}`}>
+                    {stage.progress}%
+                  </span>
+                  <ChevronRight className="text-gray-300" />
                 </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className={`text-sm font-bold ${stage.progress === 100 ? 'text-green-500' : 'text-blue-600'}`}>
-                  {stage.progress}%
-                </span>
-                <ChevronRight className="text-gray-300" />
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
 
         <Link to="/chat" className="flex items-center justify-between rounded-3xl bg-blue-900 p-6 text-white shadow-xl">
