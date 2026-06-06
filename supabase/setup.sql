@@ -35,10 +35,13 @@ CREATE TABLE IF NOT EXISTS user_checklist (
 
 -- RLS Policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "users_own" ON users;
 CREATE POLICY "users_own" ON users USING (auth.uid() = id);
 
 ALTER TABLE user_checklist ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "checklist_own" ON user_checklist;
 CREATE POLICY "checklist_own" ON user_checklist USING (auth.uid() = user_id);
 
 ALTER TABLE checklist_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "items_read" ON checklist_items;
 CREATE POLICY "items_read" ON checklist_items FOR SELECT USING (auth.role() = 'authenticated');

@@ -5,4 +5,5 @@ python-dotenv
 supabase
 openai
 anthropic
+google-generativeai
 httpx

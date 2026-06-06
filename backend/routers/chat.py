@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List
-from backend.lib.ai import get_ai_response
+from lib.ai import get_ai_response
 
 router = APIRouter()
 
