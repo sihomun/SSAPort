@@ -21,6 +21,16 @@ const calculateDDay = (dateString) => {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 };
 
+const uniqueItems = (items) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = `${item.stage ?? ''}|${item.categoryId ?? ''}|${(item.title ?? '').trim().toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const [stages, setStages] = useState([]);
@@ -50,8 +60,8 @@ const Dashboard = () => {
 
         const response = await apiClient.get('/checklist/', { user_id: user.id });
         const categories = response.categories || [];
-        const allItems = categories.flatMap((category) =>
-          category.items.map((item) => ({ ...item, categoryId: category.id })),
+        const allItems = uniqueItems(
+          categories.flatMap((category) => category.items.map((item) => ({ ...item, categoryId: category.id }))),
         );
 
         const groupedStages = stageNames.map((name, index) => {

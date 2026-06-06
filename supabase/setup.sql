@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- 2. checklist_items table
 CREATE TABLE IF NOT EXISTS checklist_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  stage int DEFAULT 0,
   category text,
   university text,
   title text,
@@ -24,6 +25,8 @@ CREATE TABLE IF NOT EXISTS checklist_items (
   "order" int
 );
 
+ALTER TABLE checklist_items ADD COLUMN IF NOT EXISTS stage int DEFAULT 0;
+
 -- 3. user_checklist table
 CREATE TABLE IF NOT EXISTS user_checklist (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,6 +35,9 @@ CREATE TABLE IF NOT EXISTS user_checklist (
   is_done bool DEFAULT false,
   done_at timestamptz
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS user_checklist_user_item_unique
+ON user_checklist(user_id, item_id);
 
 -- RLS Policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

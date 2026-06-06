@@ -15,6 +15,16 @@ const stageMap = {
   7: 'STAGE 7: 귀국 및 보고',
 };
 
+const uniqueItems = (items) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = `${item.stage ?? ''}|${item.categoryId ?? ''}|${(item.title ?? '').trim().toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 const ChecklistDetail = () => {
   const { category } = useParams();
   const navigate = useNavigate();
@@ -41,7 +51,7 @@ const ChecklistDetail = () => {
           return false;
         });
 
-        setItems(filtered);
+        setItems(uniqueItems(filtered));
       } catch (error) {
         console.error('Fetch items error:', error);
       } finally {
