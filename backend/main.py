@@ -10,17 +10,11 @@ from routers import users, checklist, chat, packing
 
 app = FastAPI(title="SSAPort API")
 
-# CORS 설정
-# 브라우저 보안 정책상 allow_credentials=True일 경우 allow_origins=["*"]를 사용할 수 없습니다.
-# 따라서 명시적인 주소를 적거나, credentials를 False로 설정해야 합니다.
+# CORS 설정: 모든 오리진 허용 (Vercel 미리보기 주소 대응)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://ssa-port-6i3ffz6sw-sihomun-s-projects.vercel.app",
-        "https://ssa-port-frontend.vercel.app" # 실제 프론트엔드 배포 주소
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
