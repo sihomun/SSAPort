@@ -28,7 +28,7 @@ const uniqueItems = (items) => {
       .toLowerCase()
       .replace(/\s+/g, ' ');
     const rules = [
-      ['language-score', ['toeic', 'toefl', 'ielts', 'duolingo', '어학', '영어 성적', '성적표']],
+      ['language-score', ['toeic', 'toefl', 'ielts', 'duolingo', '어학성적', '어학 성적', '영어 성적']],
       ['study-plan', ['study plan', '학업계획', '학업 계획', 'course code', 'syllabus', '수강 과목', 'course']],
       ['cv-documents', ['cv', '이력서', '서류', 'pdf', '병합', '서약서', '성적표']],
       ['interview-result', ['면접 대상', '합격자', '선발 결과', '결과 발표']],
@@ -56,7 +56,7 @@ const uniqueItems = (items) => {
   };
   const seen = new Set();
   return items.filter((item) => {
-    const key = `${item.stage ?? ''}|${getSemanticTopic(item)}`;
+    const key = `${item.resolved_stage ?? item.stage ?? ''}|${getSemanticTopic(item)}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -67,6 +67,7 @@ const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const [stages, setStages] = useState([]);
   const [overallProgress, setOverallProgress] = useState(0);
+  const [returnProgress, setReturnProgress] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -98,6 +99,9 @@ const Dashboard = () => {
 
         const groupedStages = stageNames.map((name, index) => {
           const stageItems = allItems.filter((item) => {
+            if (item.resolved_stage !== undefined && item.resolved_stage !== null && item.resolved_stage !== '') {
+              return Number(item.resolved_stage) === index;
+            }
             if (item.stage !== undefined && item.stage !== null) return Number(item.stage) === index;
             const title = (item.title || '').toLowerCase();
             if (
@@ -140,7 +144,8 @@ const Dashboard = () => {
         });
 
         setStages(groupedStages);
-        setOverallProgress(response.overall_progress || 0);
+        setOverallProgress(response.pre_departure_progress ?? response.overall_progress ?? 0);
+        setReturnProgress(response.post_return_progress ?? 0);
       } catch (error) {
         console.error('Dashboard error:', error);
       } finally {
@@ -177,16 +182,31 @@ const Dashboard = () => {
       </div>
 
       <div className="mx-auto mt-8 max-w-4xl px-6">
-        <div className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-bold text-gray-900">전체 준비 완료율</h3>
-            <span className="font-bold text-blue-600">{overallProgress}%</span>
+        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">출국 전 준비 완료율</h3>
+              <span className="font-bold text-blue-600">{overallProgress}%</span>
+            </div>
+            <div className="h-4 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className="h-full bg-blue-600 transition-all duration-700"
+                style={{ width: `${overallProgress}%` }}
+              />
+            </div>
           </div>
-          <div className="h-4 w-full overflow-hidden rounded-full bg-gray-100">
-            <div
-              className="h-full bg-blue-600 transition-all duration-700"
-              style={{ width: `${overallProgress}%` }}
-            />
+
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">귀국 후 보고 완료율</h3>
+              <span className="font-bold text-emerald-600">{returnProgress}%</span>
+            </div>
+            <div className="h-4 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-700"
+                style={{ width: `${returnProgress}%` }}
+              />
+            </div>
           </div>
         </div>
 

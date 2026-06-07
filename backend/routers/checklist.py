@@ -41,11 +41,11 @@ def _semantic_topic(item_info: Dict[str, Any]) -> str:
     )
 
     topic_rules = [
-        ("language-score", ("toeic", "toefl", "ielts", "duolingo", "어학", "영어 성적", "성적표")),
+        ("language-score", ("toeic", "toefl", "ielts", "duolingo", "어학성적", "어학 성적", "영어 성적")),
         ("english-name", ("영문명", "여권", "passport name")),
-        ("application-deadline", ("지원서", "신청", "제출", "마감", "이메일", "application")),
         ("study-plan", ("study plan", "학업계획", "학업 계획", "course code", "syllabus", "수강 과목", "course")),
         ("cv-documents", ("cv", "이력서", "서류", "pdf", "병합", "서약서", "성적표")),
+        ("application-deadline", ("지원서", "지원 신청", "신청서", "이메일 제출", "제출 마감", "지원 마감", "application")),
         ("interview-result", ("면접 대상", "합격자", "선발 결과", "결과 발표", "발표 확인")),
         ("interview-prep", ("예상 질문", "면접 준비", "지원 동기", "답변 준비")),
         ("interview", ("면접 진행", "인터뷰 진행")),
@@ -234,6 +234,7 @@ async def get_checklist(user_id: str = Query(...)):
                 if link.get("url") not in {db_link.get("url") for db_link in db_links}
             ]
 
+            resolved_stage = _resolved_stage(item_info)
             ui_item = {
                 "id": record["item_id"],
                 "title": item_info.get("title"),
@@ -244,13 +245,24 @@ async def get_checklist(user_id: str = Query(...)):
                 "source_links": source_links,
                 "links": combined_links,
                 "stage": item_info.get("stage"),
+                "resolved_stage": resolved_stage,
             }
 
             seen_items[key] = ui_item
             categories_dict[category_id]["items"].append(ui_item)
 
-        total_items = len(seen_items)
-        done_items = sum(1 for item in seen_items.values() if item["is_done"])
+        pre_departure_items = [
+            item
+            for item in seen_items.values()
+            if str(item.get("resolved_stage") or item.get("stage")) != "7"
+        ]
+        post_return_items = [
+            item
+            for item in seen_items.values()
+            if str(item.get("resolved_stage") or item.get("stage")) == "7"
+        ]
+        pre_departure_done = sum(1 for item in pre_departure_items if item["is_done"])
+        post_return_done = sum(1 for item in post_return_items if item["is_done"])
 
         final_categories = []
         for category in categories_dict.values():
@@ -265,10 +277,21 @@ async def get_checklist(user_id: str = Query(...)):
             category["progress"] = int((cat_done / cat_total * 100)) if cat_total > 0 else 0
             final_categories.append(category)
 
-        overall_progress = int((done_items / total_items * 100)) if total_items > 0 else 0
+        pre_departure_progress = (
+            int((pre_departure_done / len(pre_departure_items) * 100))
+            if pre_departure_items
+            else 0
+        )
+        post_return_progress = (
+            int((post_return_done / len(post_return_items) * 100))
+            if post_return_items
+            else 0
+        )
 
         return {
-            "overall_progress": overall_progress,
+            "overall_progress": pre_departure_progress,
+            "pre_departure_progress": pre_departure_progress,
+            "post_return_progress": post_return_progress,
             "categories": final_categories,
         }
     except Exception as e:

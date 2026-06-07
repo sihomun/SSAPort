@@ -23,11 +23,11 @@ const getSemanticTopic = (item) => {
     .toLowerCase()
     .replace(/\s+/g, ' ');
   const rules = [
-    ['language-score', ['toeic', 'toefl', 'ielts', 'duolingo', '어학', '영어 성적', '성적표']],
+    ['language-score', ['toeic', 'toefl', 'ielts', 'duolingo', '어학성적', '어학 성적', '영어 성적']],
     ['english-name', ['영문명', '여권', 'passport name']],
-    ['application-deadline', ['지원서', '신청', '제출', '마감', '이메일', 'application']],
     ['study-plan', ['study plan', '학업계획', '학업 계획', 'course code', 'syllabus', '수강 과목', 'course']],
     ['cv-documents', ['cv', '이력서', '서류', 'pdf', '병합', '서약서', '성적표']],
+    ['application-deadline', ['지원서', '지원 신청', '신청서', '이메일 제출', '제출 마감', '지원 마감', 'application']],
     ['interview-result', ['면접 대상', '합격자', '선발 결과', '결과 발표', '발표 확인']],
     ['interview-prep', ['예상 질문', '면접 준비', '지원 동기', '답변 준비']],
     ['interview', ['면접 진행', '인터뷰 진행']],
@@ -56,7 +56,7 @@ const getSemanticTopic = (item) => {
 const uniqueItems = (items) => {
   const seen = new Set();
   return items.filter((item) => {
-    const key = `${item.resolvedStage ?? item.stage ?? ''}|${getSemanticTopic(item)}`;
+    const key = `${item.resolvedStage ?? item.resolved_stage ?? item.stage ?? ''}|${getSemanticTopic(item)}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -64,6 +64,9 @@ const uniqueItems = (items) => {
 };
 
 const getItemStage = (item, fallbackCategory) => {
+  if (item.resolved_stage !== undefined && item.resolved_stage !== null && item.resolved_stage !== '') {
+    return Number(item.resolved_stage);
+  }
   if (item.stage !== undefined && item.stage !== null) return Number(item.stage);
   const title = (item.title || '').toLowerCase();
   if (
