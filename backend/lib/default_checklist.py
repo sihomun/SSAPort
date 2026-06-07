@@ -1,6 +1,16 @@
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
+TOEIC_REQUIREMENTS = {
+    "uc berkeley": "UC Berkeley: TOEIC 685 이상",
+    "ucla": "UCLA: TOEIC 685 이상",
+    "utrecht": "Utrecht: TOEIC 650 이상",
+    "tu berlin": "TU Berlin: TOEIC 650 이상",
+    "tbs edu.": "TBS Edu.: TOEIC 650 이상",
+    "tbs education": "TBS Education: TOEIC 650 이상",
+}
+
+
 DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
     {
         "stage": 1,
@@ -189,6 +199,56 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
 ]
 
 
+def _normalized_university(host_university: Optional[str]) -> str:
+    return (host_university or "").strip().lower()
+
+
+def _toeic_requirement_for(host_university: Optional[str]) -> Optional[str]:
+    university = _normalized_university(host_university)
+    for key, requirement in TOEIC_REQUIREMENTS.items():
+        if key in university:
+            return requirement
+    return None
+
+
+def _is_utrecht(host_university: Optional[str]) -> bool:
+    return "utrecht" in _normalized_university(host_university)
+
+
+def _applies_to_university(item: Dict[str, Any], host_university: Optional[str]) -> bool:
+    if _is_utrecht(host_university) and item.get("category") == "visa":
+        return False
+    return True
+
+
+def _university_specific_items(host_university: Optional[str]) -> List[Dict[str, Any]]:
+    items = []
+    toeic_requirement = _toeic_requirement_for(host_university)
+
+    if toeic_requirement:
+        items.append(
+            {
+                "stage": 0,
+                "category": "common",
+                "title": "TOEIC 기준 점수 확인",
+                "deadline_label": "D-130",
+                "description": f"{toeic_requirement} 조건을 충족하는지 확인하고 유효 기간 내 성적표를 준비합니다.",
+                "source_detail": "SSAP 신청 체크리스트의 학교별 최소 어학 기준 표에 따르면 UC Berkeley와 UCLA는 TOEIC 685 이상, Utrecht와 TU Berlin과 TBS Edu.는 TOEIC 650 이상 기준이 있습니다.",
+            }
+        )
+
+    return items
+
+
+def default_stage_items_for(host_university: Optional[str] = None) -> List[Dict[str, Any]]:
+    items = [
+        item
+        for item in DEFAULT_STAGE_ITEMS
+        if _applies_to_university(item, host_university)
+    ]
+    return _university_specific_items(host_university) + items
+
+
 def item_key(item: Dict[str, Any]) -> Tuple[str, str, str]:
     return (
         str(item.get("stage", 0)),
@@ -197,11 +257,11 @@ def item_key(item: Dict[str, Any]) -> Tuple[str, str, str]:
     )
 
 
-def merge_default_stage_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def merge_default_stage_items(items: List[Dict[str, Any]], host_university: Optional[str] = None) -> List[Dict[str, Any]]:
     merged = list(items)
     seen = {item_key(item) for item in merged}
 
-    for default_item in DEFAULT_STAGE_ITEMS:
+    for default_item in default_stage_items_for(host_university):
         key = item_key(default_item)
         if key in seen:
             continue
@@ -213,7 +273,7 @@ def merge_default_stage_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any
 
 def get_source_detail(item: Dict[str, Any]) -> Optional[str]:
     key = item_key(item)
-    for default_item in DEFAULT_STAGE_ITEMS:
+    for default_item in default_stage_items_for(item.get("university")):
         if item_key(default_item) == key:
             return default_item.get("source_detail")
     return None
@@ -244,7 +304,7 @@ def ensure_default_stage_items(
         existing_keys.add(item_key(item_info))
 
     inserted_count = 0
-    for default_item in DEFAULT_STAGE_ITEMS:
+    for default_item in default_stage_items_for(host_university):
         key = item_key(default_item)
         if key in existing_keys:
             continue

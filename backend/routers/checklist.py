@@ -32,6 +32,28 @@ def _dedupe_key(item_info: Dict[str, Any]) -> Tuple[str, str, str]:
     return stage, category, title
 
 
+def _should_hide_for_university(item_info: Dict[str, Any], host_university: Any) -> bool:
+    university = (host_university or "").strip().lower()
+    if "utrecht" not in university:
+        return False
+
+    category = (item_info.get("category") or "").strip().lower()
+    title = (item_info.get("title") or "").strip().lower()
+    stage = item_info.get("stage")
+
+    is_visa_item = (
+        category == "visa"
+        or stage == 4
+        or "visa" in title
+        or "비자" in title
+        or "sevis" in title
+        or "ds-160" in title
+        or "eta" in title
+        or "입국" in title
+    )
+    return is_visa_item
+
+
 @router.get("/")
 async def get_checklist(user_id: str = Query(...)):
     try:
@@ -86,6 +108,8 @@ async def get_checklist(user_id: str = Query(...)):
             item_info = record.get("checklist_items")
             if not item_info:
                 continue
+            if _should_hide_for_university(item_info, host_university):
+                continue
 
             key = _dedupe_key(item_info)
             if key in seen_items:
@@ -103,7 +127,7 @@ async def get_checklist(user_id: str = Query(...)):
                 "is_done": bool(record.get("is_done")),
                 "deadline_label": item_info.get("deadline_label"),
                 "description": item_info.get("description"),
-                "source_detail": get_source_detail(item_info),
+                "source_detail": get_source_detail({**item_info, "university": host_university}),
                 "links": item_info.get("links", []),
                 "stage": item_info.get("stage"),
             }
