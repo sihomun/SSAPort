@@ -10,6 +10,25 @@ TOEIC_REQUIREMENTS = {
     "tbs education": "TBS Education: TOEIC 650 이상",
 }
 
+UNIVERSITY_ALIASES = {
+    "ucla": ["ucla", "myucla", "bruinbill"],
+    "uc berkeley": ["uc berkeley", "berkeley", "calcentral", "calnet", "flywire"],
+    "harvard": ["harvard", "mydce", "dce"],
+    "ucl": ["ucl", "ucl summer", "offer form"],
+    "upenn": ["upenn", "penn"],
+    "utrecht": ["utrecht"],
+    "tu berlin": ["tu berlin", "berlin"],
+    "tbs edu.": ["tbs edu", "tbs education", "tbs"],
+}
+
+US_VISA_TITLES = {
+    "I-901 SEVIS Fee 납부",
+    "DS-160 작성",
+    "비자 인터뷰 예약 및 서류 준비",
+}
+
+UK_ENTRY_TITLES = {"영국 ETA 확인"}
+
 
 DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
     {
@@ -203,6 +222,22 @@ def _normalized_university(host_university: Optional[str]) -> str:
     return (host_university or "").strip().lower()
 
 
+def _university_key(host_university: Optional[str]) -> Optional[str]:
+    university = _normalized_university(host_university)
+    for key in UNIVERSITY_ALIASES:
+        if key in university:
+            return key
+    return None
+
+
+def _is_us_school(host_university: Optional[str]) -> bool:
+    return _university_key(host_university) in {"ucla", "uc berkeley", "harvard", "upenn"}
+
+
+def _is_ucl(host_university: Optional[str]) -> bool:
+    return _university_key(host_university) == "ucl"
+
+
 def _toeic_requirement_for(host_university: Optional[str]) -> Optional[str]:
     university = _normalized_university(host_university)
     for key, requirement in TOEIC_REQUIREMENTS.items():
@@ -212,12 +247,90 @@ def _toeic_requirement_for(host_university: Optional[str]) -> Optional[str]:
 
 
 def _is_utrecht(host_university: Optional[str]) -> bool:
-    return "utrecht" in _normalized_university(host_university)
+    return _university_key(host_university) == "utrecht"
+
+
+def mentions_other_university(item: Dict[str, Any], host_university: Optional[str]) -> bool:
+    selected = _university_key(host_university)
+    if not selected:
+        return False
+
+    text = " ".join(
+        str(item.get(field) or "")
+        for field in ("title", "description", "source_detail")
+    ).lower()
+
+    for university, aliases in UNIVERSITY_ALIASES.items():
+        if university == selected:
+            continue
+        if any(alias in text for alias in aliases):
+            return True
+    return False
 
 
 def _applies_to_university(item: Dict[str, Any], host_university: Optional[str]) -> bool:
-    if _is_utrecht(host_university) and item.get("category") == "visa":
+    if item.get("category") != "visa":
+        return True
+
+    title = item.get("title")
+    if _is_us_school(host_university):
+        return title in US_VISA_TITLES
+    if _is_ucl(host_university):
+        return title in UK_ENTRY_TITLES
+    if _is_utrecht(host_university):
         return False
+
+    return False
+
+
+def _personalize_item(item: Dict[str, Any], host_university: Optional[str]) -> Dict[str, Any]:
+    personalized = dict(item)
+    university_key = _university_key(host_university)
+
+    if personalized["title"] == "파견교 계정 생성":
+        details = {
+            "ucla": "UCLA는 등록 완료 메일과 UCLA 학번(UID)을 받은 뒤 MyUCLA에서 'I Have a 9 Digit UCLA ID Number (UID)'를 선택해 계정을 생성합니다.",
+            "uc berkeley": "UC Berkeley는 안내 메일로 받은 학번과 액세스 코드로 CalCentral Portal에 접속하고 CalNet ID를 생성합니다.",
+            "harvard": "Harvard는 안내 절차에 따라 DCE 계정을 생성하고 MyDCE에서 Pre-Registration을 진행합니다.",
+            "ucl": "UCL은 Your Application 절차에 따라 등록 양식을 제출하고 등록 번호를 반드시 보관합니다.",
+        }
+        if university_key in details:
+            personalized["source_detail"] = details[university_key]
+
+    if personalized["title"] == "수강 신청 및 등록비 납부":
+        details = {
+            "ucla": "UCLA는 MyUCLA > BruinBill에서 Registration 비용과 수업료를 납부합니다. 수강 학점에 따라 금액이 달라질 수 있습니다.",
+            "uc berkeley": "UC Berkeley는 CalCentral에서 수강 과목을 신청하고 Flywire 등 안내된 방식으로 수업료를 납부합니다.",
+            "harvard": "Harvard는 MyDCE에서 대면 수업만으로 8학점 이상을 충족하도록 수강 신청하고 Financial Services에서 비용을 납부합니다.",
+            "ucl": "UCL은 이름과 등록 번호를 입력해 수업료 결제 링크로 납부하고 Acceptance of Offer Form 제출 여부를 확인합니다.",
+        }
+        if university_key in details:
+            personalized["source_detail"] = details[university_key]
+
+    if personalized["title"] == "I-20 또는 Offer Form 준비":
+        details = {
+            "ucla": "UCLA는 I-20 Request 제출 시 여권 사본, CFS, 잔액증명서 또는 장학증서, 영어 성적 증명서를 준비합니다.",
+            "uc berkeley": "UC Berkeley는 ISS Portal에서 여권 인적사항 사본, 재정증명서, SEVIS 수수료 영수증, Full-Time Enrollment 확인 자료를 제출합니다.",
+            "harvard": "Harvard는 수강 확정 후 I-20 발급 관련 메일을 기다리고 필요한 서류 요청에 맞춰 준비합니다.",
+            "ucl": "UCL은 Acceptance of Offer Form을 빠르게 제출해 등록과 기숙사 신청 절차가 지연되지 않도록 합니다.",
+        }
+        if university_key in details:
+            personalized["source_detail"] = details[university_key]
+            if university_key == "ucl":
+                personalized["title"] = "Acceptance of Offer Form 준비"
+                personalized["description"] = "UCL 등록 절차에 필요한 Acceptance of Offer Form 제출 여부를 확인합니다."
+
+    if personalized["title"] == "숙소 신청 또는 예약":
+        details = {
+            "ucla": "UCLA는 Housing Application & Offer에서 기숙사를 신청하고, 룸메이트 지정 여부와 해외 결제 가능 카드 납부를 확인합니다.",
+            "uc berkeley": "UC Berkeley는 Housing 또는 International House 안내를 확인하고 Summer Sessions Housing Offer 수신 후 예약금을 납부합니다.",
+            "harvard": "Harvard는 MyDCE > My Tasks의 Housing Request를 확인하고 백신 접종 증빙 등 입주 조건을 준비합니다.",
+            "ucl": "UCL은 UCL Summer Residences에서 기숙사를 확인하고, Acceptance of Offer Form 제출 후 빠르게 신청합니다.",
+        }
+        if university_key in details:
+            personalized["source_detail"] = details[university_key]
+
+    return personalized
     return True
 
 
@@ -233,7 +346,7 @@ def _university_specific_items(host_university: Optional[str]) -> List[Dict[str,
                 "title": "TOEIC 기준 점수 확인",
                 "deadline_label": "D-130",
                 "description": f"{toeic_requirement} 조건을 충족하는지 확인하고 유효 기간 내 성적표를 준비합니다.",
-                "source_detail": "SSAP 신청 체크리스트의 학교별 최소 어학 기준 표에 따르면 UC Berkeley와 UCLA는 TOEIC 685 이상, Utrecht와 TU Berlin과 TBS Edu.는 TOEIC 650 이상 기준이 있습니다.",
+                "source_detail": f"SSAP 신청 체크리스트의 학교별 최소 어학 기준 표에서 선택한 대학의 TOEIC 조건은 {toeic_requirement}입니다. 성적표 유효 기간도 함께 확인하세요.",
             }
         )
 
@@ -242,7 +355,7 @@ def _university_specific_items(host_university: Optional[str]) -> List[Dict[str,
 
 def default_stage_items_for(host_university: Optional[str] = None) -> List[Dict[str, Any]]:
     items = [
-        item
+        _personalize_item(item, host_university)
         for item in DEFAULT_STAGE_ITEMS
         if _applies_to_university(item, host_university)
     ]

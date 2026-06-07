@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from lib.default_checklist import ensure_default_stage_items, get_source_detail
+from lib.default_checklist import ensure_default_stage_items, get_source_detail, mentions_other_university
 from lib.supabase import supabase
 
 router = APIRouter()
@@ -34,8 +34,6 @@ def _dedupe_key(item_info: Dict[str, Any]) -> Tuple[str, str, str]:
 
 def _should_hide_for_university(item_info: Dict[str, Any], host_university: Any) -> bool:
     university = (host_university or "").strip().lower()
-    if "utrecht" not in university:
-        return False
 
     category = (item_info.get("category") or "").strip().lower()
     title = (item_info.get("title") or "").strip().lower()
@@ -51,7 +49,21 @@ def _should_hide_for_university(item_info: Dict[str, Any], host_university: Any)
         or "eta" in title
         or "입국" in title
     )
-    return is_visa_item
+    if not is_visa_item:
+        return False
+
+    us_school = any(name in university for name in ("ucla", "uc berkeley", "berkeley", "harvard", "upenn"))
+    ucl_school = "ucl" in university
+    utrecht_school = "utrecht" in university
+
+    if us_school:
+        return "eta" in title or "영국" in title
+    if ucl_school:
+        return "sevis" in title or "ds-160" in title or "인터뷰" in title or "i-901" in title
+    if utrecht_school:
+        return True
+
+    return True
 
 
 @router.get("/")
@@ -107,6 +119,8 @@ async def get_checklist(user_id: str = Query(...)):
         for record in response.data:
             item_info = record.get("checklist_items")
             if not item_info:
+                continue
+            if mentions_other_university(item_info, host_university):
                 continue
             if _should_hide_for_university(item_info, host_university):
                 continue
