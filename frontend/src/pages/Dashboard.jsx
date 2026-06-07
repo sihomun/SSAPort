@@ -67,6 +67,29 @@ const Dashboard = () => {
         const groupedStages = stageNames.map((name, index) => {
           const stageItems = allItems.filter((item) => {
             if (item.stage !== undefined && item.stage !== null) return Number(item.stage) === index;
+            const title = (item.title || '').toLowerCase();
+            if (
+              index === 3 &&
+              (title.includes('registration') ||
+                title.includes('i-20') ||
+                title.includes('offer') ||
+                title.includes('파견교') ||
+                title.includes('등록') ||
+                title.includes('수강'))
+            ) {
+              return true;
+            }
+            if (
+              index === 4 &&
+              (title.includes('visa') ||
+                title.includes('sevis') ||
+                title.includes('ds-160') ||
+                title.includes('eta') ||
+                title.includes('비자') ||
+                title.includes('입국'))
+            ) {
+              return true;
+            }
             if (index === 3) return item.categoryId === 'flights';
             if (index === 4) return item.categoryId === 'visa';
             if (index === 5) return item.categoryId === 'accommodation';

@@ -29,6 +29,27 @@ const uniqueItems = (items) => {
 
 const getItemStage = (item, fallbackCategory) => {
   if (item.stage !== undefined && item.stage !== null) return Number(item.stage);
+  const title = (item.title || '').toLowerCase();
+  if (
+    title.includes('registration') ||
+    title.includes('i-20') ||
+    title.includes('offer') ||
+    title.includes('파견교') ||
+    title.includes('등록') ||
+    title.includes('수강')
+  ) {
+    return 3;
+  }
+  if (
+    title.includes('visa') ||
+    title.includes('sevis') ||
+    title.includes('ds-160') ||
+    title.includes('eta') ||
+    title.includes('비자') ||
+    title.includes('입국')
+  ) {
+    return 4;
+  }
   if (item.categoryId === 'flights') return 3;
   if (item.categoryId === 'visa') return 4;
   if (item.categoryId === 'accommodation') return 5;
