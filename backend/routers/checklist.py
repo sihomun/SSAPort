@@ -32,10 +32,71 @@ def _normalize_text(value: Any) -> str:
     return text
 
 
+def _semantic_topic(item_info: Dict[str, Any]) -> str:
+    text = _normalize_text(
+        " ".join(
+            str(item_info.get(field) or "")
+            for field in ("title", "description", "deadline_label")
+        )
+    )
+
+    topic_rules = [
+        ("language-score", ("toeic", "toefl", "ielts", "duolingo", "어학", "영어 성적", "성적표")),
+        ("english-name", ("영문명", "여권", "passport name")),
+        ("application-deadline", ("지원서", "신청", "제출", "마감", "이메일", "application")),
+        ("study-plan", ("study plan", "학업계획", "학업 계획", "course code", "syllabus", "수강 과목", "course")),
+        ("cv-documents", ("cv", "이력서", "서류", "pdf", "병합", "서약서", "성적표")),
+        ("interview-result", ("면접 대상", "합격자", "선발 결과", "결과 발표", "발표 확인")),
+        ("interview-prep", ("예상 질문", "면접 준비", "지원 동기", "답변 준비")),
+        ("interview", ("면접 진행", "인터뷰 진행")),
+        ("registration-link", ("registration link", "등록 링크", "비밀번호", "service fee", "감면")),
+        ("account", ("계정", "portal", "포털", "myucla", "calcentral", "calnet", "mydce", "등록 번호", "student id", "uid")),
+        ("course-registration", ("수강 신청", "등록비", "수업료", "납부", "bruinbill", "flywire", "financial services", "결제")),
+        ("i20-offer", ("i-20", "i20", "offer form", "acceptance of offer", "iss portal", "visa request")),
+        ("sevis", ("sevis", "i-901", "i901")),
+        ("ds160", ("ds-160", "ds160")),
+        ("visa-interview", ("비자 인터뷰", "인터뷰 예약", "ustraveldocs", "비자 수수료")),
+        ("eta", ("eta", "영국 입국", "입국 허가")),
+        ("housing-compare", ("숙소 선택", "숙소 비교", "기숙사", "airbnb", "i-house", "위치", "계약 조건")),
+        ("housing-apply", ("숙소 신청", "숙소 예약", "housing application", "housing request", "residences", "예약금")),
+        ("move-in", ("입주", "체크인", "보증금", "주소", "담당자")),
+        ("flight-route", ("항공권", "공항", "이동 동선", "교통편")),
+        ("departure-essentials", ("출국 필수", "어댑터", "상비약", "esim", "로밍", "결제 카드", "비상용 카드", "보조배터리")),
+        ("emergency-contact", ("비상 연락", "긴급 연락", "연락망", "보험사")),
+        ("report", ("결과보고서", "보고서")),
+        ("receipt", ("영수증", "증빙", "정산")),
+        ("final-submit", ("최종 제출", "제출 확인", "접수 여부")),
+    ]
+
+    for topic, keywords in topic_rules:
+        if any(keyword in text for keyword in keywords):
+            return topic
+
+    return _normalize_text(item_info.get("title"))
+
+
+def _resolved_stage(item_info: Dict[str, Any]) -> str:
+    stage = item_info.get("stage")
+    if stage is not None:
+        return str(stage)
+
+    category = _normalize_text(item_info.get("category"))
+    topic = _semantic_topic(item_info)
+    if topic in {"registration-link", "account", "course-registration", "i20-offer"}:
+        return "3"
+    if topic in {"sevis", "ds160", "visa-interview", "eta"} or category == "visa":
+        return "4"
+    if topic in {"housing-compare", "housing-apply", "move-in"} or category == "accommodation":
+        return "5"
+    if topic in {"flight-route", "departure-essentials", "emergency-contact"} or category == "packing":
+        return "6"
+    if topic in {"report", "receipt", "final-submit"}:
+        return "7"
+    return ""
+
+
 def _dedupe_key(item_info: Dict[str, Any]) -> Tuple[str, str]:
-    stage = str(item_info.get("stage", ""))
-    title = _normalize_text(item_info.get("title"))
-    return stage, title
+    return _resolved_stage(item_info), _semantic_topic(item_info)
 
 
 def _deadline_sort_value(deadline_label: Any) -> int:
