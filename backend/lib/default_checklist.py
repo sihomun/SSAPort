@@ -85,7 +85,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "title": "KENTECH 등록 링크 대기",
         "deadline_label": "D-80",
         "description": "International Service Fee 감면을 위해 KENTECH가 제공하는 등록 링크와 비밀번호를 받은 뒤 등록을 시작합니다.",
-        "source_detail": "SSAP 체크리스트는 미국 학교 공통으로 KENTECH가 주는 Registration Link와 비밀번호를 받을 때까지 대기하라고 안내합니다. 링크 없이 먼저 등록하면 감면 절차가 복잡해질 수 있습니다.",
+        "source_detail": "미국 학교 등록은 KENTECH가 제공하는 Registration Link와 비밀번호를 받은 뒤 시작하세요. 링크 없이 먼저 등록하면 감면 절차가 복잡해질 수 있습니다.",
     },
     {
         "stage": 3,
@@ -101,7 +101,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "title": "수강 신청 및 등록비 납부",
         "deadline_label": "D-70",
         "description": "파견교 포털에서 수강 과목을 신청하고 등록비, 수업료, 프로그램 비용 납부 여부를 확인합니다.",
-        "source_detail": "문서 기준 4월 말까지 등록을 마무리해야 I-20 발급과 비자 신청 일정에 여유가 있습니다. UCLA BruinBill, Berkeley Flywire, Harvard MyDCE, UCL 결제 링크 등 학교별 결제 경로를 확인하세요.",
+        "source_detail": "4월 말까지 등록을 마무리하면 I-20 발급과 비자 신청 일정에 여유가 있습니다. 선택한 학교의 결제 경로와 납부 마감일을 확인하세요.",
     },
     {
         "stage": 3,
@@ -117,7 +117,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "title": "I-901 SEVIS Fee 납부",
         "deadline_label": "D-60",
         "description": "미국 F-1 비자 대상자는 I-20 발급 후 SEVIS ID로 I-901 SEVIS Fee를 납부하고 영수증을 저장합니다.",
-        "source_detail": "SSAP 체크리스트는 미국 비자 절차를 I-901 SEVIS Fee 납부 → DS-160 작성 → 비자 수수료 납부 → 인터뷰 예약/진행 순서로 안내합니다. Payment Confirmation 영수증은 반드시 보관하세요.",
+        "source_detail": "미국 비자 절차는 I-901 SEVIS Fee 납부 → DS-160 작성 → 비자 수수료 납부 → 인터뷰 예약/진행 순서로 준비하세요. Payment Confirmation 영수증은 반드시 보관하세요.",
     },
     {
         "stage": 4,
@@ -141,7 +141,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "title": "영국 ETA 확인",
         "deadline_label": "D-45",
         "description": "UCL 등 영국 파견자는 2025년 이후 입국 전 ETA 필요 여부를 확인하고 신청합니다.",
-        "source_detail": "문서 기준 2025년부터 영국 입국 전 ETA가 필요합니다. 별도 비자 발급은 아닐 수 있지만, 출국 전 여권과 항공권 준비 단계에서 ETA 발급 여부를 확인하세요.",
+        "source_detail": "영국 입국 전 ETA 필요 여부를 확인하세요. 별도 비자 발급은 아닐 수 있지만, 출국 전 여권과 항공권 준비 단계에서 ETA 발급 여부를 확인해야 합니다.",
     },
     {
         "stage": 5,
@@ -149,7 +149,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "title": "숙소 선택지 비교",
         "deadline_label": "D-75",
         "description": "기숙사, I-House, 단기 임대, Airbnb의 위치, 비용, 계약 조건, 통학 시간을 비교합니다.",
-        "source_detail": "문서 기준 숙소 선택지는 기숙사와 Airbnb가 대표적입니다. 기숙사는 안전, 보안, 학교 시설 이용, 현지 학생 교류에 장점이 있고 Airbnb는 자유로운 생활과 친구들과 함께 지내기 좋은 점이 있습니다.",
+        "source_detail": "숙소 선택지는 기숙사와 Airbnb가 대표적입니다. 기숙사는 안전, 보안, 학교 시설 이용, 현지 학생 교류에 장점이 있고 Airbnb는 자유로운 생활과 친구들과 함께 지내기 좋은 점이 있습니다.",
     },
     {
         "stage": 5,
@@ -346,7 +346,7 @@ def _university_specific_items(host_university: Optional[str]) -> List[Dict[str,
                 "title": "TOEIC 기준 점수 확인",
                 "deadline_label": "D-130",
                 "description": f"{toeic_requirement} 조건을 충족하는지 확인하고 유효 기간 내 성적표를 준비합니다.",
-                "source_detail": f"SSAP 신청 체크리스트의 학교별 최소 어학 기준 표에서 선택한 대학의 TOEIC 조건은 {toeic_requirement}입니다. 성적표 유효 기간도 함께 확인하세요.",
+                "source_detail": f"선택한 대학의 TOEIC 조건은 {toeic_requirement}입니다. 성적표 유효 기간도 함께 확인하세요.",
             }
         )
 
