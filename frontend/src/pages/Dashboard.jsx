@@ -24,7 +24,7 @@ const calculateDDay = (dateString) => {
 const uniqueItems = (items) => {
   const seen = new Set();
   return items.filter((item) => {
-    const key = `${item.stage ?? ''}|${item.categoryId ?? ''}|${(item.title ?? '').trim().toLowerCase()}`;
+    const key = `${item.stage ?? ''}|${(item.title ?? '').trim().toLowerCase().replace(/\s+/g, ' ')}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, Tuple
 
 from fastapi import APIRouter, HTTPException, Query
@@ -25,11 +26,39 @@ def _empty_categories() -> Dict[str, Any]:
     }
 
 
-def _dedupe_key(item_info: Dict[str, Any]) -> Tuple[str, str, str]:
+def _normalize_text(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+
+def _dedupe_key(item_info: Dict[str, Any]) -> Tuple[str, str]:
     stage = str(item_info.get("stage", ""))
-    category = (item_info.get("category") or "common").strip().lower()
-    title = (item_info.get("title") or "").strip().lower()
-    return stage, category, title
+    title = _normalize_text(item_info.get("title"))
+    return stage, title
+
+
+def _deadline_sort_value(deadline_label: Any) -> int:
+    label = str(deadline_label or "").strip()
+
+    d_day_match = re.search(r"D\s*-\s*(\d+)", label, re.IGNORECASE)
+    if d_day_match:
+        return -int(d_day_match.group(1))
+
+    d_plus_match = re.search(r"D\s*\+\s*(\d+)", label, re.IGNORECASE)
+    if d_plus_match:
+        return int(d_plus_match.group(1))
+
+    after_return_match = re.search(r"귀국\s*후\s*(\d+)", label)
+    if after_return_match:
+        return 1000 + int(after_return_match.group(1))
+
+    if "귀국" in label:
+        return 1000
+    if "d-day" in label.lower() or label == "D-Day":
+        return 0
+
+    return 500
 
 
 def _should_hide_for_university(item_info: Dict[str, Any], host_university: Any) -> bool:
@@ -114,7 +143,7 @@ async def get_checklist(user_id: str = Query(...)):
             return {"overall_progress": 0, "categories": []}
 
         categories_dict = _empty_categories()
-        seen_items: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
+        seen_items: Dict[Tuple[str, str], Dict[str, Any]] = {}
 
         for record in response.data:
             item_info = record.get("checklist_items")
@@ -164,6 +193,12 @@ async def get_checklist(user_id: str = Query(...)):
 
         final_categories = []
         for category in categories_dict.values():
+            category["items"].sort(
+                key=lambda item: (
+                    _deadline_sort_value(item.get("deadline_label")),
+                    _normalize_text(item.get("title")),
+                )
+            )
             cat_total = len(category["items"])
             cat_done = sum(1 for item in category["items"] if item["is_done"])
             category["progress"] = int((cat_done / cat_total * 100)) if cat_total > 0 else 0

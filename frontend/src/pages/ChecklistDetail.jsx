@@ -20,7 +20,7 @@ const stageIds = Object.keys(stageMap).map(Number);
 const uniqueItems = (items) => {
   const seen = new Set();
   return items.filter((item) => {
-    const key = `${item.stage ?? ''}|${item.categoryId ?? ''}|${(item.title ?? '').trim().toLowerCase()}`;
+    const key = `${item.resolvedStage ?? item.stage ?? ''}|${(item.title ?? '').trim().toLowerCase().replace(/\s+/g, ' ')}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -57,6 +57,29 @@ const getItemStage = (item, fallbackCategory) => {
   return Number(fallbackCategory);
 };
 
+const getDeadlineSortValue = (deadlineLabel) => {
+  const label = String(deadlineLabel || '').trim();
+  const dDayMatch = label.match(/D\s*-\s*(\d+)/i);
+  if (dDayMatch) return -Number(dDayMatch[1]);
+
+  const dPlusMatch = label.match(/D\s*\+\s*(\d+)/i);
+  if (dPlusMatch) return Number(dPlusMatch[1]);
+
+  const afterReturnMatch = label.match(/귀국\s*후\s*(\d+)/);
+  if (afterReturnMatch) return 1000 + Number(afterReturnMatch[1]);
+
+  if (label.includes('귀국')) return 1000;
+  if (label.toLowerCase() === 'd-day') return 0;
+  return 500;
+};
+
+const sortByDeadline = (items) =>
+  [...items].sort((a, b) => {
+    const deadlineDiff = getDeadlineSortValue(a.deadline_label) - getDeadlineSortValue(b.deadline_label);
+    if (deadlineDiff !== 0) return deadlineDiff;
+    return String(a.title || '').localeCompare(String(b.title || ''), 'ko');
+  });
+
 const ChecklistDetail = () => {
   const { category } = useParams();
   const navigate = useNavigate();
@@ -90,7 +113,7 @@ const ChecklistDetail = () => {
           ),
         );
 
-        setItems(allItems.filter((item) => item.resolvedStage === currentStage));
+        setItems(sortByDeadline(allItems.filter((item) => item.resolvedStage === currentStage)));
       } catch (error) {
         console.error('Fetch items error:', error);
       } finally {
