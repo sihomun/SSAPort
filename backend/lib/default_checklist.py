@@ -118,6 +118,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "deadline_label": "D-60",
         "description": "미국 F-1 비자 대상자는 I-20 발급 후 SEVIS ID로 I-901 SEVIS Fee를 납부하고 영수증을 저장합니다.",
         "source_detail": "미국 비자 절차는 I-901 SEVIS Fee 납부 → DS-160 작성 → 비자 수수료 납부 → 인터뷰 예약/진행 순서로 준비하세요. Payment Confirmation 영수증은 반드시 보관하세요.",
+        "links": [{"label": "I-901 SEVIS Fee", "url": "https://www.fmjfee.com/i901fee/index.html"}],
     },
     {
         "stage": 4,
@@ -126,6 +127,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "deadline_label": "D-55",
         "description": "미국 비자 신청자는 DS-160을 작성하고 Application ID와 보안 질문 답변을 따로 기록합니다.",
         "source_detail": "DS-160은 ceac.state.gov에서 작성합니다. AA로 시작하는 Application ID와 Security Question Answer는 재로그인에 필요하므로 반드시 기록하세요.",
+        "links": [{"label": "DS-160", "url": "https://ceac.state.gov/genniv/"}],
     },
     {
         "stage": 4,
@@ -134,6 +136,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "deadline_label": "D-50",
         "description": "비자 수수료를 납부하고 인터뷰를 예약한 뒤 여권, I-20, DS-160 확인서, SEVIS 영수증, 예약 확인서, 사진을 준비합니다.",
         "source_detail": "미국 비자 인터뷰에는 여권, I-20, DS-160 확인서, SEVIS 영수증, 비자 인터뷰 예약 확인서, 비자 사진이 필요합니다. 인터뷰 후 여권 수령까지 약 1주가 걸릴 수 있습니다.",
+        "links": [{"label": "비자 인터뷰 예약", "url": "https://www.ustraveldocs.com/"}],
     },
     {
         "stage": 4,
@@ -142,6 +145,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "deadline_label": "D-45",
         "description": "UCL 등 영국 파견자는 2025년 이후 입국 전 ETA 필요 여부를 확인하고 신청합니다.",
         "source_detail": "영국 입국 전 ETA 필요 여부를 확인하세요. 별도 비자 발급은 아닐 수 있지만, 출국 전 여권과 항공권 준비 단계에서 ETA 발급 여부를 확인해야 합니다.",
+        "links": [{"label": "영국 ETA 안내", "url": "https://www.gov.uk/guidance/apply-for-an-electronic-travel-authorisation-eta"}],
     },
     {
         "stage": 5,
@@ -150,6 +154,7 @@ DEFAULT_STAGE_ITEMS: List[Dict[str, Any]] = [
         "deadline_label": "D-75",
         "description": "기숙사, I-House, 단기 임대, Airbnb의 위치, 비용, 계약 조건, 통학 시간을 비교합니다.",
         "source_detail": "숙소 선택지는 기숙사와 Airbnb가 대표적입니다. 기숙사는 안전, 보안, 학교 시설 이용, 현지 학생 교류에 장점이 있고 Airbnb는 자유로운 생활과 친구들과 함께 지내기 좋은 점이 있습니다.",
+        "links": [{"label": "Airbnb", "url": "https://www.airbnb.com/"}],
     },
     {
         "stage": 5,
@@ -294,8 +299,15 @@ def _personalize_item(item: Dict[str, Any], host_university: Optional[str]) -> D
             "harvard": "Harvard는 안내 절차에 따라 DCE 계정을 생성하고 MyDCE에서 Pre-Registration을 진행합니다.",
             "ucl": "UCL은 Your Application 절차에 따라 등록 양식을 제출하고 등록 번호를 반드시 보관합니다.",
         }
+        links = {
+            "ucla": [{"label": "MyUCLA", "url": "https://www.my.ucla.edu/"}],
+            "uc berkeley": [{"label": "CalCentral", "url": "https://calcentral.berkeley.edu/"}],
+            "harvard": [{"label": "Harvard DCE", "url": "https://dce.harvard.edu/"}],
+            "ucl": [{"label": "UCL Your Application", "url": "https://www.ucl.ac.uk/prospective-students/summer-school/your-application"}],
+        }
         if university_key in details:
             personalized["source_detail"] = details[university_key]
+            personalized["links"] = links.get(university_key, [])
 
     if personalized["title"] == "수강 신청 및 등록비 납부":
         details = {
@@ -304,8 +316,15 @@ def _personalize_item(item: Dict[str, Any], host_university: Optional[str]) -> D
             "harvard": "Harvard는 MyDCE에서 대면 수업만으로 8학점 이상을 충족하도록 수강 신청하고 Financial Services에서 비용을 납부합니다.",
             "ucl": "UCL은 이름과 등록 번호를 입력해 수업료 결제 링크로 납부하고 Acceptance of Offer Form 제출 여부를 확인합니다.",
         }
+        links = {
+            "ucla": [{"label": "MyUCLA", "url": "https://www.my.ucla.edu/"}],
+            "uc berkeley": [{"label": "Berkeley Summer Sessions", "url": "https://summer.berkeley.edu/"}],
+            "harvard": [{"label": "Harvard Course Registration", "url": "https://courses.dce.harvard.edu/"}],
+            "ucl": [{"label": "UCL Summer School", "url": "https://www.ucl.ac.uk/prospective-students/summer-school/"}],
+        }
         if university_key in details:
             personalized["source_detail"] = details[university_key]
+            personalized["links"] = links.get(university_key, [])
 
     if personalized["title"] == "I-20 또는 Offer Form 준비":
         details = {
@@ -314,8 +333,15 @@ def _personalize_item(item: Dict[str, Any], host_university: Optional[str]) -> D
             "harvard": "Harvard는 수강 확정 후 I-20 발급 관련 메일을 기다리고 필요한 서류 요청에 맞춰 준비합니다.",
             "ucl": "UCL은 Acceptance of Offer Form을 빠르게 제출해 등록과 기숙사 신청 절차가 지연되지 않도록 합니다.",
         }
+        links = {
+            "ucla": [{"label": "UCLA I-20 Request", "url": "https://sa.ucla.edu/DCISS/VisaRequest/Home"}],
+            "uc berkeley": [{"label": "Berkeley ISS Portal", "url": "https://iss-portal.berkeley.edu/_portal/"}],
+            "harvard": [{"label": "Harvard DCE", "url": "https://dce.harvard.edu/"}],
+            "ucl": [{"label": "UCL Your Application", "url": "https://www.ucl.ac.uk/prospective-students/summer-school/your-application"}],
+        }
         if university_key in details:
             personalized["source_detail"] = details[university_key]
+            personalized["links"] = links.get(university_key, [])
             if university_key == "ucl":
                 personalized["title"] = "Acceptance of Offer Form 준비"
                 personalized["description"] = "UCL 등록 절차에 필요한 Acceptance of Offer Form 제출 여부를 확인합니다."
@@ -327,11 +353,23 @@ def _personalize_item(item: Dict[str, Any], host_university: Optional[str]) -> D
             "harvard": "Harvard는 MyDCE > My Tasks의 Housing Request를 확인하고 백신 접종 증빙 등 입주 조건을 준비합니다.",
             "ucl": "UCL은 UCL Summer Residences에서 기숙사를 확인하고, Acceptance of Offer Form 제출 후 빠르게 신청합니다.",
         }
+        links = {
+            "ucla": [
+                {"label": "UCLA Housing", "url": "https://portal.housing.ucla.edu/my-housing"},
+                {"label": "UCLA Housing Guide", "url": "https://ucla.app.box.com/v/hhs-application-walkthru"},
+            ],
+            "uc berkeley": [
+                {"label": "Berkeley Housing", "url": "https://housing.berkeley.edu/"},
+                {"label": "International House", "url": "https://ihouse.berkeley.edu/admissions"},
+            ],
+            "harvard": [{"label": "Harvard DCE", "url": "https://dce.harvard.edu/"}],
+            "ucl": [{"label": "UCL Summer Residences", "url": "https://www.ucl.ac.uk/residences/ucl-summer-residences"}],
+        }
         if university_key in details:
             personalized["source_detail"] = details[university_key]
+            personalized["links"] = links.get(university_key, [])
 
     return personalized
-    return True
 
 
 def _university_specific_items(host_university: Optional[str]) -> List[Dict[str, Any]]:
@@ -392,6 +430,14 @@ def get_source_detail(item: Dict[str, Any]) -> Optional[str]:
     return None
 
 
+def get_source_links(item: Dict[str, Any]) -> List[Dict[str, str]]:
+    key = item_key(item)
+    for default_item in default_stage_items_for(item.get("university")):
+        if item_key(default_item) == key:
+            return default_item.get("links", [])
+    return []
+
+
 def ensure_default_stage_items(
     supabase_client: Any,
     user_id: str,
@@ -432,6 +478,7 @@ def ensure_default_stage_items(
                     "title": default_item["title"],
                     "description": default_item["description"],
                     "deadline_label": default_item["deadline_label"],
+                    "links": default_item.get("links", []),
                 }
             )
             .execute()

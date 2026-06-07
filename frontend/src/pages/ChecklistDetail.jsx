@@ -227,10 +227,26 @@ const ChecklistDetail = () => {
                     {item.description}
                   </p>
 
-                  {!item.is_done && item.source_detail && (
+                  {!item.is_done && (item.source_detail || (item.source_links && item.source_links.length > 0)) && (
                     <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-relaxed text-blue-950">
                       <p className="mb-1 font-bold text-blue-700">준비 안내</p>
-                      <p>{item.source_detail}</p>
+                      {item.source_detail && <p>{item.source_detail}</p>}
+                      {item.source_links && item.source_links.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {item.source_links.map((link, index) => (
+                            <a
+                              key={`${link.url}-${index}`}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
+                            >
+                              <ExternalLink size={13} className="mr-1.5" />
+                              {link.label}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 

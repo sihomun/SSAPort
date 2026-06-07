@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from lib.default_checklist import ensure_default_stage_items, get_source_detail, mentions_other_university
+from lib.default_checklist import ensure_default_stage_items, get_source_detail, get_source_links, mentions_other_university
 from lib.supabase import supabase
 
 router = APIRouter()
@@ -135,14 +135,24 @@ async def get_checklist(user_id: str = Query(...)):
             if category_id not in categories_dict:
                 category_id = "common"
 
+            item_with_context = {**item_info, "university": host_university}
+            db_links = item_info.get("links") or []
+            source_links = get_source_links(item_with_context)
+            combined_links = db_links + [
+                link
+                for link in source_links
+                if link.get("url") not in {db_link.get("url") for db_link in db_links}
+            ]
+
             ui_item = {
                 "id": record["item_id"],
                 "title": item_info.get("title"),
                 "is_done": bool(record.get("is_done")),
                 "deadline_label": item_info.get("deadline_label"),
                 "description": item_info.get("description"),
-                "source_detail": get_source_detail({**item_info, "university": host_university}),
-                "links": item_info.get("links", []),
+                "source_detail": get_source_detail(item_with_context),
+                "source_links": source_links,
+                "links": combined_links,
                 "stage": item_info.get("stage"),
             }
 
